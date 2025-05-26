@@ -2,6 +2,12 @@
 import Image from "next/image";
 import styles from "./page.module.css";
 import { useRef, useEffect } from "react";
+import { createPlayer } from '../../game/player/player';
+import { createMonster } from '../../game/monster/monster';
+import { clampToCanvas, getDistance, isInRange, moveEntityTowards } from '../../game/core/movement';
+import { updateMonster } from '../../game/monster/monsterAI';
+import { tryAttack, performCircularAttack } from '../../game/combat/attack';
+import { drawEntity, drawRotatingFlame } from '../../game/canvas/draw';
 
 export default function Home() {
   const canvasRef = useRef(null);
@@ -13,46 +19,12 @@ export default function Home() {
 
   // --- Fonctions utilitaires pures ---
   // (Gardées à l'extérieur du useEffect)
-
-  // Crée un joueur ou monstre avec position, vie, dégâts et vitesse
-  function createEntity(x, y, hp, damage, speed) {
-    return {
-      x,
-      y,
-      hp,
-      maxHp: hp,
-      damage,
-      speed,
-      isAlive: true,
-      attackAngle: 0,
-      attackRadius: 30,
-      idleTimer: 0,
-      originalX: x,
-      originalY: y,
-      targetX: x,
-      targetY: y,
-      attackCooldown: 0
-    };
-  }
-  function clampToCanvas(entity, canvas) {
-    const radius = 10;
-    entity.x = Math.max(radius, Math.min(canvas.width - radius, entity.x));
-    entity.y = Math.max(radius, Math.min(canvas.height - radius, entity.y));
-  }
-  function getDistance(a, b) {
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
-  function isInRange(source, target, range = 100) {
-    return getDistance(source, target) < range;
-  }
-  function moveEntityTowards(entity, targetX, targetY, canvas) {
-    const angle = Math.atan2(targetY - entity.y, targetX - entity.x);
-    entity.x += Math.cos(angle) * entity.speed;
-    entity.y += Math.sin(angle) * entity.speed;
-    clampToCanvas(entity, canvas);
-  }
+  // Les fonctions sont maintenant importées, donc on retire les anciennes définitions locales :
+  // - createEntity
+  // - clampToCanvas
+  // - getDistance
+  // - isInRange
+  // - moveEntityTowards
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -117,36 +89,17 @@ export default function Home() {
       if (!playerRef.current.isAlive) return;
       moveEntityTowards(playerRef.current, mouseRef.current.x, mouseRef.current.y, canvas);
       monstersRef.current.forEach(monster => {
-        updateMonster(monster, playerRef.current);
-        tryAttack(monster, playerRef.current);
+        updateMonster(monster, playerRef.current, canvas);
+        tryAttack(monster, playerRef.current, gameOver);
       });
       performCircularAttack(playerRef.current, monstersRef.current);
       playerRef.current.attackAngle += 0.1;
     }
-    function drawEntity(entity, color) {
-      ctx.fillStyle = entity.isAlive ? color : 'gray';
-      ctx.beginPath();
-      ctx.arc(entity.x, entity.y, 10, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = 'red';
-      ctx.fillRect(entity.x - 15, entity.y - 20, 30, 5);
-      ctx.fillStyle = 'lime';
-      const hpRatio = entity.hp / entity.maxHp;
-      ctx.fillRect(entity.x - 15, entity.y - 20, 30 * hpRatio, 5);
-    }
-    function drawRotatingFlame(player) {
-      const flameX = player.x + Math.cos(player.attackAngle) * player.attackRadius;
-      const flameY = player.y + Math.sin(player.attackAngle) * player.attackRadius;
-      ctx.fillStyle = 'orange';
-      ctx.beginPath();
-      ctx.arc(flameX, flameY, 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (playerRef.current.isAlive) drawEntity(playerRef.current, 'blue');
-      drawRotatingFlame(playerRef.current);
-      monstersRef.current.forEach(monster => drawEntity(monster, 'green'));
+      if (playerRef.current.isAlive) drawEntity(ctx, playerRef.current, 'blue');
+      drawRotatingFlame(ctx, playerRef.current);
+      monstersRef.current.forEach(monster => drawEntity(ctx, monster, 'green'));
     }
     function gameLoop() {
       update();
@@ -157,7 +110,7 @@ export default function Home() {
       const padding = 20;
       const x = Math.random() * (canvas.width - 2 * padding) + padding;
       const y = Math.random() * (canvas.height - 2 * padding) + padding;
-      monstersRef.current.push(createEntity(x, y, 30, 5, 1));
+      monstersRef.current.push(createMonster(x, y, 30, 5, 1));
     }
     function gameOver() {
       gameOverScreen.style.display = 'flex';
@@ -166,7 +119,7 @@ export default function Home() {
     }
     function restartGame() {
       gameOverScreen.style.display = 'none';
-      playerRef.current = createEntity(300, 200, 100, 10, 4);
+      playerRef.current = createPlayer(300, 200, 100, 10, 4);
       monstersRef.current = [];
       spawnMonster();
       spawnMonster();
