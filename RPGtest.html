@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RPG Game Test</title>
+  <style>
+    body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #222; }
+    canvas { background: #111; display: block; border: 2px solid #555; }
+  </style>
+</head>
+<body>
+<canvas id="gameCanvas" width="600" height="400"></canvas>
+<script>
+function createEntity(x, y, hp, damage, speed) {
+  return {
+    x,
+    y,
+    hp,
+    maxHp: hp,
+    damage,
+    speed,
+    isAlive: true,
+    attackAngle: 0,
+    attackRadius: 30,
+    idleTimer: 0,
+    originalX: x,
+    originalY: y,
+    targetX: x,
+    targetY: y,
+    attackCooldown: 0
+  };
+}
+
+function getDistance(a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function isInRange(source, target, range = 100) {
+  return getDistance(source, target) < range;
+}
+
+function moveEntityTowards(entity, targetX, targetY) {
+  const angle = Math.atan2(targetY - entity.y, targetX - entity.x);
+  entity.x += Math.cos(angle) * entity.speed;
+  entity.y += Math.sin(angle) * entity.speed;
+}
+
+function updateMonster(monster, player) {
+  if (!monster.isAlive) return;
+  if (isInRange(monster, player)) {
+    moveEntityTowards(monster, player.x, player.y);
+  } else {
+    if (monster.idleTimer <= 0) {
+      monster.targetX = monster.originalX + (Math.random() - 0.5) * 100;
+      monster.targetY = monster.originalY + (Math.random() - 0.5) * 100;
+      monster.idleTimer = 100;
+    } else {
+      moveEntityTowards(monster, monster.targetX, monster.targetY);
+      monster.idleTimer--;
+    }
+  }
+}
+
+function tryAttack(monster, player) {
+  if (!monster.isAlive || !player.isAlive) return;
+  if (isInRange(monster, player, 20)) {
+    if (monster.attackCooldown <= 0) {
+      player.hp -= monster.damage;
+      monster.attackCooldown = 60;
+      if (player.hp <= 0) {
+        player.isAlive = false;
+        player.hp = 0;
+      }
+    } else {
+      monster.attackCooldown--;
+    }
+  }
+}
+
+function performCircularAttack(player, monsters) {
+  if (!player.isAlive) return;
+  if (player.attackTimer === undefined) {
+    player.attackTimer = setInterval(() => {
+      if (!player.isAlive) return;
+      monsters.forEach(monster => {
+        if (!monster.isAlive) return;
+        if (isInRange(player, monster, player.attackRadius)) {
+          monster.hp -= player.damage;
+          if (monster.hp <= 0) {
+            monster.hp = 0;
+            monster.isAlive = false;
+          }
+        }
+      });
+    }, 300);
+  }
+}
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const player = createEntity(300, 200, 100, 10, 4);
+const monsters = [
+  createEntity(100, 100, 30, 5, 1),
+  createEntity(500, 300, 30, 5, 1)
+];
+
+let mouseX = player.x;
+let mouseY = player.y;
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+  mouseY = e.clientY - rect.top;
+});
+
+function update() {
+  moveEntityTowards(player, mouseX, mouseY);
+  monsters.forEach(monster => {
+    updateMonster(monster, player);
+    tryAttack(monster, player);
+  });
+  performCircularAttack(player, monsters);
+  player.attackAngle += 0.1;
+}
+
+function drawEntity(entity, color) {
+  ctx.fillStyle = entity.isAlive ? color : 'gray';
+  ctx.beginPath();
+  ctx.arc(entity.x, entity.y, 10, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = 'red';
+  ctx.fillRect(entity.x - 15, entity.y - 20, 30, 5);
+  ctx.fillStyle = 'lime';
+  const hpRatio = entity.hp / entity.maxHp;
+  ctx.fillRect(entity.x - 15, entity.y - 20, 30 * hpRatio, 5);
+}
+
+function drawRotatingFlame(player) {
+  const flameX = player.x + Math.cos(player.attackAngle) * player.attackRadius;
+  const flameY = player.y + Math.sin(player.attackAngle) * player.attackRadius;
+  ctx.fillStyle = 'orange';
+  ctx.beginPath();
+  ctx.arc(flameX, flameY, 5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawEntity(player, 'blue');
+  drawRotatingFlame(player);
+  monsters.forEach(monster => drawEntity(monster, 'green'));
+}
+
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
