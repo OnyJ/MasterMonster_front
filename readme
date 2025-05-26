@@ -1,0 +1,15 @@
+## 🎮 Cycle de jeu
+
+- Lorsqu'un joueur se connecte :
+  - Si la game n’a pas encore commencé : il rejoint la partie.
+  - Si la game a commencé et que la vague est encore à 1 : il rejoint la partie.
+  - Si la game a commencé et qu’on est à une vague > 1 : il arrive en **spectateur**.
+
+- Les joueurs peuvent :
+  - Se déplacer et attaquer des monstres.
+  - Gagner de l’XP en tuant des monstres.
+  - Mourir ➜ réapparaîtront seulement à la prochaine partie.
+
+- Une partie se termine quand **tous les joueurs sont morts**.
+
+- Ensuite, bouton “Rejouer” ➜ tous les joueurs réapparaissent, XP remise à zéro.

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Game Cycle Simulation</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .player { margin: 10px 0; }
+    .spectator { color: gray; font-style: italic; }
+    button { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>🎮 Game Cycle Simulation</h1>
+
+  <div id="gameStateDisplay"></div>
+  <button onclick="joinGame()">Join Game</button>
+  <button onclick="simulateDeath()">Simulate Death</button>
+  <button onclick="replay()" id="replayBtn" style="display:none">Rejouer</button>
+
+  <h3>Players:</h3>
+  <div id="players"></div>
+
+  <script>
+    const GameState = {
+      WAITING: "waiting",
+      IN_PROGRESS: "in_progress",
+      FINISHED: "finished"
+    };
+
+    let gameState = GameState.WAITING;
+    let wave = 1;
+    let players = [];
+    let playerId = 1;
+
+    function updateGameStateDisplay() {
+      document.getElementById("gameStateDisplay").innerText = `Game State: ${gameState} | Wave: ${wave}`;
+    }
+
+    function renderPlayers() {
+      const playersDiv = document.getElementById("players");
+      playersDiv.innerHTML = "";
+      players.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "player";
+        if (!p.isAlive) div.className += " spectator";
+        div.innerText = `👤 Player ${p.id} | XP: ${p.xp} | ${p.isSpectator ? "Spectator" : p.isAlive ? "Alive" : "Dead"}`;
+        playersDiv.appendChild(div);
+      });
+    }
+
+    function joinGame() {
+      const newPlayer = {
+        id: playerId++,
+        isSpectator: false,
+        isAlive: true,
+        xp: 0
+      };
+
+      if (gameState === GameState.WAITING || (gameState === GameState.IN_PROGRESS && wave === 1)) {
+        newPlayer.isSpectator = false;
+      } else {
+        newPlayer.isSpectator = true;
+        newPlayer.isAlive = false;
+      }
+
+      players.push(newPlayer);
+      if (gameState === GameState.WAITING) gameState = GameState.IN_PROGRESS;
+      updateGameStateDisplay();
+      renderPlayers();
+    }
+
+    function simulateDeath() {
+      const alivePlayers = players.filter(p => !p.isSpectator && p.isAlive);
+      if (alivePlayers.length === 0) return;
+
+      const player = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+      player.isAlive = false;
+      player.xp = 0;
+
+      if (players.filter(p => !p.isSpectator && p.isAlive).length === 0) {
+        gameState = GameState.FINISHED;
+        document.getElementById("replayBtn").style.display = "inline-block";
+      }
+
+      updateGameStateDisplay();
+      renderPlayers();
+    }
+
+    function replay() {
+      gameState = GameState.IN_PROGRESS;
+      wave = 1;
+      players.forEach(p => {
+        p.isSpectator = false;
+        p.isAlive = true;
+        p.xp = 0;
+      });
+      document.getElementById("replayBtn").style.display = "none";
+      updateGameStateDisplay();
+      renderPlayers();
+    }
+
+    updateGameStateDisplay();
+  </script>
+</body>
+</html>
