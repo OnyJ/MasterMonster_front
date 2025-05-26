@@ -1,5 +1,5 @@
 "use client";
-import Image from "next/image";
+
 import styles from "./page.module.css";
 import { useRef, useEffect } from "react";
 import { createPlayer } from "@/game/player/player";
@@ -23,8 +23,53 @@ export default function Home() {
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    const gameOverScreen = gameOverScreenRef.current;
 
+    // Fonction pour dessiner la carte style Donjon avec obstacles
+    function drawMap() {
+      // Dessiner le fond (sol de la carte)
+      ctx.fillStyle = "#2f2f2f"; // Sol sombre pour le donjon
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Dessiner les murs du donjon
+      ctx.fillStyle = "#696969"; // Gris foncé pour les murs
+      ctx.fillRect(50, 50, 500, 20); // Mur supérieur
+      ctx.fillRect(50, 50, 20, 300); // Mur gauche
+      ctx.fillRect(530, 50, 20, 300); // Mur droit
+      ctx.fillRect(50, 330, 500, 20); // Mur inférieur
+
+      // Quelques pièces à l'intérieur du donjon
+      ctx.fillRect(150, 150, 100, 100); // Une pièce
+      ctx.fillRect(300, 150, 100, 100); // Une autre pièce
+      ctx.fillRect(150, 300, 100, 30);  // Petite pièce
+
+      // Passage entre les pièces
+      ctx.clearRect(250, 150, 50, 100); // Passage central entre deux pièces
+      ctx.clearRect(150, 250, 100, 50); // Passage entre la petite pièce et la grande
+
+      // Dessiner les portes
+      ctx.fillStyle = "#d2691e"; // Porte en bois
+      ctx.fillRect(250, 250, 20, 30); // Porte entre deux pièces
+      ctx.fillRect(400, 150, 20, 30); // Porte entre les pièces
+
+      // Ajouter des pièges (zones dangereuses)
+      ctx.fillStyle = "#ff6347"; // Rouge pour les pièges
+      ctx.fillRect(380, 250, 20, 20); // Piège dans un coin
+      ctx.fillRect(280, 300, 20, 20); // Piège près d'une porte
+
+      // Ajouter des trésors (zones de récompenses)
+      ctx.fillStyle = "#ffd700"; // Or pour les trésors
+      ctx.fillRect(180, 120, 20, 20); // Trésor dans la pièce
+      ctx.fillRect(320, 120, 20, 20); // Trésor dans l'autre pièce
+
+      // Dessiner les obstacles
+      ctx.fillStyle = "#8B0000"; // Rouge sombre pour les obstacles
+      ctx.fillRect(250, 250, 40, 40); // Premier obstacle (bloque le passage)
+      ctx.fillRect(300, 250, 40, 40); // Deuxième obstacle (bloque le passage)
+      ctx.fillRect(100, 200, 40, 40); // Troisième obstacle (bloque l'accès à une pièce)
+      ctx.fillRect(400, 300, 40, 40); // Quatrième obstacle (bloque un passage)
+    }
+
+    // Fonction de mise à jour du jeu
     function update() {
       if (!playerRef.current.isAlive) return;
       moveEntityTowards(
@@ -41,8 +86,11 @@ export default function Home() {
       playerRef.current.attackAngle += 0.1;
     }
 
+    // Fonction de dessin
     function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height); // Effacer le canvas à chaque frame
+      drawMap(); // Dessiner la carte style donjon avec obstacles
+      // Dessiner le joueur et les monstres comme d'habitude
       if (playerRef.current.isAlive)
         drawEntity(ctx, playerRef.current, "blue");
       drawRotatingFlame(ctx, playerRef.current);
@@ -51,12 +99,14 @@ export default function Home() {
       );
     }
 
+    // Boucle de jeu
     function gameLoop() {
       update();
       draw();
       if (playerRef.current.isAlive) requestAnimationFrame(gameLoop);
     }
 
+    // Fonction pour générer des monstres
     function spawnMonster() {
       const padding = 20;
       const x =
@@ -66,15 +116,17 @@ export default function Home() {
       monstersRef.current.push(createMonster(x, y, 30, 5, 1));
     }
 
+    // Fonction de fin de jeu
     function gameOver() {
-      gameOverScreen.style.display = "flex";
+      gameOverScreenRef.current.style.display = "flex";
       clearInterval(gameIntervalRef.current);
       if (playerRef.current.attackTimer)
         clearInterval(playerRef.current.attackTimer);
     }
 
+    // Fonction pour redémarrer le jeu
     function restartGame() {
-      gameOverScreen.style.display = "none";
+      gameOverScreenRef.current.style.display = "none";
       playerRef.current = createPlayer(300, 200, 100, 10, 4);
       monstersRef.current = [];
       spawnMonster();
@@ -86,6 +138,7 @@ export default function Home() {
       requestAnimationFrame(gameLoop);
     }
 
+    // Événement de déplacement de la souris
     canvas.addEventListener("mousemove", (e) => {
       const rect = canvas.getBoundingClientRect();
       mouseRef.current.x = e.clientX - rect.left;
@@ -100,6 +153,7 @@ export default function Home() {
     };
   }, []);
 
+  // Fonction pour gérer le redémarrage
   function handleRestart() {
     if (typeof window !== "undefined") {
       window.location.reload();
@@ -130,7 +184,6 @@ export default function Home() {
         <button onClick={handleRestart}>Rejouer</button>
       </div>
       <canvas
-        id="gameCanvas"
         ref={canvasRef}
         width={600}
         height={400}
@@ -139,7 +192,6 @@ export default function Home() {
           background: "#222",
           display: "block",
           margin: "0 auto",
-          zIndex: 1,
         }}
       ></canvas>
     </div>
