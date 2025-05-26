@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Déplacement Entité RPG</title>
+  <style>
+    canvas {
+      border: 1px solid black;
+      background-color: #f4f4f4;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="600" height="400"></canvas>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  const player = {
+    x: 300,
+    y: 200,
+    radius: 15,
+    color: 'blue',
+    speed: 2
+  };
+
+  const monster = {
+    x: 100,
+    y: 100,
+    radius: 15,
+    color: 'red',
+    speed: 1.2,
+    range: 120
+  };
+
+  // Fonction générique de déplacement (SRP)
+  function moveEntityToward(entity, target) {
+    const dx = target.x - entity.x;
+    const dy = target.y - entity.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance < 1) return;
+
+    const angle = Math.atan2(dy, dx);
+    entity.x += Math.cos(angle) * entity.speed;
+    entity.y += Math.sin(angle) * entity.speed;
+  }
+
+  // Mise à jour du monstre
+  function updateMonster(monster, player) {
+    const dx = player.x - monster.x;
+    const dy = player.y - monster.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < monster.range) {
+      moveEntityToward(monster, player);
+    }
+  }
+
+  // Contrôle clavier pour déplacer le joueur
+  const keys = {};
+  window.addEventListener('keydown', e => keys[e.key] = true);
+  window.addEventListener('keyup', e => keys[e.key] = false);
+
+  function updatePlayer() {
+    if (keys['ArrowUp']) player.y -= player.speed;
+    if (keys['ArrowDown']) player.y += player.speed;
+    if (keys['ArrowLeft']) player.x -= player.speed;
+    if (keys['ArrowRight']) player.x += player.speed;
+  }
+
+  function drawEntity(entity) {
+    ctx.beginPath();
+    ctx.arc(entity.x, entity.y, entity.radius, 0, Math.PI * 2);
+    ctx.fillStyle = entity.color;
+    ctx.fill();
+    ctx.closePath();
+  }
+
+  function drawRange(entity) {
+    ctx.beginPath();
+    ctx.arc(entity.x, entity.y, entity.range, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+    ctx.stroke();
+    ctx.closePath();
+  }
+
+  function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    updatePlayer();
+    updateMonster(monster, player);
+
+    drawRange(monster);
+    drawEntity(player);
+    drawEntity(monster);
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  gameLoop();
+</script>
+
+</body>
+</html>
