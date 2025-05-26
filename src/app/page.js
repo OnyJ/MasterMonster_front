@@ -2,12 +2,12 @@
 import Image from "next/image";
 import styles from "./page.module.css";
 import { useRef, useEffect } from "react";
-import { createPlayer } from '../../game/player/player';
-import { createMonster } from '../../game/monster/monster';
-import { clampToCanvas, getDistance, isInRange, moveEntityTowards } from '../../game/core/movement';
-import { updateMonster } from '../../game/monster/monsterAI';
-import { tryAttack, performCircularAttack } from '../../game/combat/attack';
-import { drawEntity, drawRotatingFlame } from '../../game/canvas/draw';
+import { createPlayer } from '@/game/player/player';
+import { createMonster } from '@/game/monster/monster';
+import { clampToCanvas, getDistance, isInRange, moveEntityTowards } from '@/game/core/movement';
+import { updateMonster } from '@/game/monster/monsterAI';
+import { tryAttack, performCircularAttack } from '@/game/combat/attack';
+import { drawEntity, drawRotatingFlame } from '@/game/canvas/draw';
 
 export default function Home() {
   const canvasRef = useRef(null);
